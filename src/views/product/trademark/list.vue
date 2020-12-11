@@ -25,10 +25,13 @@
     <!-- 分页器 -->
     <el-pagination
       class="trademark-pagination"
+      @size-change="getPageList(page, $event)"
+      @current-change="getPageList($event, limit)"
+      :current-page="page"
       :page-sizes="[3, 6, 9]"
-      :page-size="5"
+      :page-size="limit"
       layout="prev, pager, next, jumper, sizes, total"
-      :total="50"
+      :total="total"
     >
     </el-pagination>
   </div>
@@ -44,18 +47,30 @@ export default {
       trademarkList: [],
       page: 1,
       limit: 3,
+      total: 0,
     };
   },
   methods: {
+    // handleSizeChange(limit) {
+    //   this.limit = limit;
+    //   this.getPageList(this.page, this.limit);
+    // },
+    // handleCurrentChange(page) {
+    //   this.page = page;
+    //   this.getPageList(this.page, this.limit);
+    // },
     async getPageList(page, limit) {
       const result = await this.$API.trademark.getPageList(page, limit);
       console.log(result);
       if (result.code === 200) {
-        this.$message.success("数据加载成功");
+        this.$message.success("获取品牌分页列表成功");
         // 加载成功之后要更新数据
         this.trademarkList = result.data.records;
+        this.total = result.data.total;
+        this.page = result.data.current; // 当前页码
+        this.limit = result.data.size; // 每页显示条数
       } else {
-        this.$message.error("数据加载失败");
+        this.$message.error("获取品牌分页列表失败");
       }
     },
   },
