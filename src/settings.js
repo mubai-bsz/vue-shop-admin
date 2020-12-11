@@ -5,7 +5,7 @@ module.exports = {
   /*
   主界面左侧Logo标题
   */
-  title: "我的-谷粒后台",
+  title: "我的---后台",
 
   /*
   是否固定主界面的Header部分

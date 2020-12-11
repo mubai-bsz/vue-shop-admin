@@ -15,25 +15,21 @@ export default {
   /*
   新增
   */
-  addPageList(banner) {
+  addPageList(data) {
     return request({
       url: `${api_name}/save`,
       method: "POST",
-      body: {
-        banner
-      }
+      data
     });
   },
   /*
   修改
   */
-  updatePageList(banner) {
+  updatePageList(data) {
     return request({
       url: `${api_name}/update`,
       method: "PUT",
-      body: {
-        banner
-      }
+      data
     });
   },
   /*
