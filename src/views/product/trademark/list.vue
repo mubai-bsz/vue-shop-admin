@@ -1,8 +1,6 @@
 <template>
   <div>
-    <el-button type="primary" icon="el-icon-plus" @click="visible = true"
-      >添加</el-button
-    >
+    <el-button type="primary" icon="el-icon-plus" @click="add">添加</el-button>
     <!-- 点击添加按钮弹出对话框 -->
     <el-form
       :model="trademarkForm"
@@ -12,7 +10,11 @@
       class="demo-ruleForm"
     >
       <!-- 输入品牌名 -->
-      <el-dialog title="添加品牌" :visible.sync="visible" width="50%">
+      <el-dialog
+        :title="`${trademarkForm.id ? '修改' : '添加'}品牌`"
+        :visible.sync="visible"
+        width="50%"
+      >
         <el-form-item label="品牌名称" prop="tmName">
           <el-input v-model="trademarkForm.tmName"></el-input>
         </el-form-item>
@@ -56,7 +58,12 @@
       </el-dialog>
     </el-form>
     <!-- 表格展示数据 -->
-    <el-table :data="trademarkList" border style="width: 100%; margin: 20px 0">
+    <el-table
+      v-loading="loading"
+      :data="trademarkList"
+      border
+      style="width: 100%; margin: 20px 0"
+    >
       <el-table-column type="index" label="序号" width="80" align="center">
       </el-table-column>
       <el-table-column prop="tmName" label="品牌名称"> </el-table-column>
@@ -69,8 +76,11 @@
         </template>
       </el-table-column>
       <el-table-column fixed="right" label="操作">
-        <template>
-          <el-button type="warning" icon="el-icon-edit">修改</el-button>
+        <!-- 使用插槽获取数据 -->
+        <template slot-scope="{ row }">
+          <el-button type="warning" icon="el-icon-edit" @click="update(row)"
+            >修改</el-button
+          >
           <el-button type="danger" icon="el-icon-delete">删除</el-button>
         </template>
       </el-table-column>
@@ -83,7 +93,7 @@
       @current-change="getPageList($event, limit)"
       :current-page="page"
       :page-sizes="[3, 6, 9]"
-      :page-size="limit"
+      :page-size.sync="limit"
       layout="prev, pager, next, jumper, sizes, total"
       :total="total"
     >
@@ -119,9 +129,31 @@ export default {
           },
         ],
       },
+      loading: false,
     };
   },
   methods: {
+    // 添加按钮方法
+    // 修改bug：点击添加按钮，不输入内容直接点确定，出现提示，在点击修改按钮时，提示依然存在，这是由于校验未清除引起的，清除校验即可
+    add() {
+      // 如果表单存在就执行,使用ref来获取到元素时，this.$refs.xxx 中的xxx必须是ref的值
+      this.$refs.ruleForm && this.$refs.ruleForm.clearValidate();
+      this.visible = true;
+      // 获取到数据之后，再次点击添加按钮，数据为空,但是为了避免在添加时先点击上传，出现图片没有显示的bug，这里就把trademarkForm其中的值都设置为空，这样，里面就有值了
+      this.trademarkForm = {
+        tmName: "",
+        logoUrl: "",
+      };
+    },
+
+    // 定义一方法来获取原来行内的数据
+    update(row) {
+      // 这里使用对象解构的方法，来获取到一份新的数据，不过这个数据与原始数据相同，但是地址值并不相同，所以在修改的时候，不会影响到原来的数据
+      this.$refs.ruleForm && this.$refs.ruleForm.clearValidate();
+      this.trademarkForm = { ...row };
+      this.visible = true;
+    },
+
     // 有更加方便的写法
     // handleSizeChange(limit) {
     //   this.limit = limit;
@@ -132,7 +164,9 @@ export default {
     //   this.getPageList(this.page, this.limit);
     // },
     // 请求品牌分类列表
+
     async getPageList(page, limit) {
+      this.loading = true;
       const result = await this.$API.trademark.getPageList(page, limit);
       // console.log(result);
       if (result.code === 200) {
@@ -145,11 +179,12 @@ export default {
       } else {
         this.$message.error("获取品牌分页列表失败");
       }
+      this.loading = false;
     },
     // 上传成功
     handleAvatarSuccess(res) {
       this.trademarkForm.logoUrl = res.data;
-      console.log(res.data); // 图片地址
+      // console.log(res.data); // 图片地址
     },
     // 上传之前先检测传入的图片
     beforeAvatarUpload(file) {
@@ -170,26 +205,51 @@ export default {
       // 返回值为false，表示不可以上传
       return isValidType && isLt;
     },
-    // 上传图片点击确定时触发
+    // 提交表单
     submitForm(formName) {
       // 先校验表单
       this.$refs[formName].validate(async (valid) => {
         if (valid) {
-          // 表单校验通过，发送请求,添加数据
-          const result = await this.$API.trademark.addPageList(
-            this.trademarkForm
-          );
+          const { trademarkForm } = this;
+          // 表示是否更新,强制转换成布尔值
+          const isUpdate = !!trademarkForm.id;
+          console.log(isUpdate);
+          // 如个是修改则需要验证,比较 trademarkList 中id值与logoURL的值是否与t rademarkForm 相等
+          if (isUpdate) {
+            const tm = this.trademarkList.find(
+              (tm) => tm.id === trademarkForm.id
+            );
+            // 如果相等表示没有修改，弹出提示框
+            if (
+              tm.tmName === trademarkForm.tmName &&
+              tm.logoUrl === trademarkForm.logoUrl
+            ) {
+              this.$message.warning("修改的数据不能与原来的数据一样哦~~~");
+              return;
+            }
+          }
+
+          // 表单校验通过，调用接口，发送请求更新或添加数据,添加数据或者是更新数据
+          let result = {};
+          if (isUpdate) {
+            result = await this.$API.trademark.updatePageList(
+              this.trademarkForm
+            );
+            console.log(result);
+          } else {
+            result = await this.$API.trademark.addPageList(this.trademarkForm);
+          }
+
           if (result.code === 200) {
             this.$message.success("品牌添加成功");
             this.visible = false; // 隐藏框
             // 重新发送请求，刷新数据
             this.getPageList(this.page, this.limit);
+            // 成功之后，隐藏
+            this.visible = false;
           }
-        } else {
-          this.$message.error(result.message);
         }
       });
-      visible: false;
     },
   },
   mounted() {
