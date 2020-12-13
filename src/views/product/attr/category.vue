@@ -79,6 +79,7 @@ export default {
         this.$message.error(result.message);
       }
     },
+    // 二级列表
     async handleSelectChange2(category2Id) {
       // 切换时把后面的数据清空
       this.category.category3Id = "";
@@ -91,19 +92,14 @@ export default {
         this.$message.error(result.message);
       }
     },
+    // 三级列表
     async handleSelectChange3(category3Id) {
       const category = {
         ...this.category,
         category3Id,
       };
-      const result = await this.$API.attrs.getAttrList(category);
-      if (result.code === 200) {
-        // console.log(result.data);
-        // 子组件给父组件传递参数 自定义事件
-        this.$emit("change", result.data);
-      } else {
-        this.$message.error(result.message);
-      }
+
+      this.$emit("change", category);
     },
   },
   async mounted() {
