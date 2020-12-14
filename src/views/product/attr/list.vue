@@ -1,9 +1,19 @@
 <template>
   <div>
-    <Category @change="getAttrList" :disabled="!isShowList" />
+    <Category
+      @change="getAttrList"
+      :disabled="!isShowList"
+      @clearList="clearList"
+    />
 
     <el-card v-show="isShowList" style="margin-top: 20px">
-      <el-button type="primary" icon="el-icon-plus">添加属性</el-button>
+      <el-button
+        type="primary"
+        icon="el-icon-plus"
+        :disabled="!category.category3Id"
+        @click="addAttr"
+        >添加属性</el-button
+      >
 
       <el-table :data="attrList" border style="width: 100%; margin: 20px 0">
         <el-table-column type="index" label="序号" width="80" align="center">
@@ -46,7 +56,11 @@
         </el-form-item>
       </el-form>
 
-      <el-button type="primary" icon="el-icon-plus" @click="addAttrValue"
+      <el-button
+        type="primary"
+        icon="el-icon-plus"
+        @click="addAttrValue"
+        :disabled="!attr.attrName"
         >添加属性值</el-button
       >
 
@@ -119,10 +133,29 @@ export default {
         attrName: "",
         attrValueList: [],
       },
+      category: {
+        category1Id: "",
+        category2Id: "",
+        category3Id: "",
+      },
     };
   },
   methods: {
-    // 防止attr变化时修改元数据
+    // 重新选择分类列表，清除列表内容
+    clearList() {
+      // 清空数据
+      this.attrList = [];
+      // 禁用按钮
+      this.category.category3Id = "";
+    },
+    clearList() {},
+    // 添加属性
+    addAttr() {
+      this.isShowList = false;
+      this.attr.attrName = "";
+      this.attr.attrValueList = [];
+      this.attr.id = "";
+    },
     editCompleted(row, index) {
       if (!row.valueName) {
         this.attr.attrValueList.splice(index, 1);
@@ -131,7 +164,17 @@ export default {
       row.edit = false;
     },
     async save() {
-      const result = await this.$API.attrs.saveAttrInfo(this.attr);
+      // 要判断这个按钮触发的是修改还是添加，可以依据id来判断,修改有id，添加没有id，在vue插件中看
+      const isAdd = !this.attr.id;
+      const data = this.attr;
+      // 如果是添加，直接在data中加入category3Id和categoryLevel即可。在api接口中查看到的
+      if (isAdd) {
+        data.categoryId = this.category.category3Id;
+        data.categoryLevel = 3;
+      }
+      console.log(data);
+      // 修改
+      const result = await this.$API.attrs.saveAttrInfo(data);
       if (result.code === 200) {
         this.$message.success("更新属性成功~");
         this.isShowList = true;
@@ -150,6 +193,7 @@ export default {
       });
     },
     edit(row) {
+      // 把row设置成响应式
       this.$set(row, "edit", true);
       this.$nextTick(() => {
         this.$refs.input.focus();

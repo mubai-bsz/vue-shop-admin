@@ -78,6 +78,8 @@ export default {
       } else {
         this.$message.error(result.message);
       }
+      // 清空列表数据
+      this.$emit("clearList");
     },
     // 二级列表
     async handleSelectChange2(category2Id) {
@@ -91,6 +93,7 @@ export default {
       } else {
         this.$message.error(result.message);
       }
+      this.$emit("clearList");
     },
     // 三级列表
     async handleSelectChange3(category3Id) {
@@ -100,6 +103,7 @@ export default {
       };
 
       this.$emit("change", category);
+      
     },
   },
   async mounted() {
