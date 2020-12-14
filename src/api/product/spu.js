@@ -8,7 +8,7 @@ export default {
   */
   getSpuList({ category3Id, page, limit }) {
     return request({
-      url: `${api_name}/attrInfoList/${page}/${limit}`,
+      url: `${api_name}/${page}/${limit}`,
       method: "GET",
       params: {
         category3Id
