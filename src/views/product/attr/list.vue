@@ -121,7 +121,7 @@
 </template>
 
 <script>
-import Category from "./category";
+import Category from "@/components/Category";
 
 export default {
   name: "AttrList",
