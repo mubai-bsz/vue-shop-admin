@@ -72,10 +72,12 @@
 
           <el-table-column label="属性值列表">
             <template v-slot="{ row }">
+              <!--    @close="delTag(index, row)" index的传入主要是为了为了使用下标精准选中某一元素 -->
               <el-tag
                 closable
+                @close="delTag(index, row)"
                 style="margin-right: 5px"
-                v-for="attrVal in row.spuSaleAttrValueList"
+                v-for="(attrVal, index) in row.spuSaleAttrValueList"
                 :key="attrVal.id"
                 >{{ attrVal.saleAttrValueName }}</el-tag
               >
@@ -106,17 +108,23 @@
             </template>
           </el-table-column>
           <el-table-column label="操作" width="150">
-            <template>
-              <el-button
-                type="warning"
-                icon="el-icon-edit"
-                size="mini"
-              ></el-button>
-              <el-button
-                type="danger"
-                icon="el-icon-delete"
-                size="mini"
-              ></el-button>
+            <template v-slot="{ row, $index }">
+              <!--
+                </el-popconfirm> 套一层气泡，在点击删除时，弹出提示框，:title为配套的提示文字
+                在按钮外套上这个标签之后，按钮出现不显示的问题，
+                解决方法：在按钮上加上slot = "reference" 即可解决，原因：reference 会触发 Popconfirm 显示的 HTML 元素
+                -->
+              <el-popconfirm
+                @onConfirm="delSpuSaleAttr($index)"
+                :title="`确定删除 ${row.saleAttrName} 吗？`"
+              >
+                <el-button
+                  type="danger"
+                  icon="el-icon-delete"
+                  size="mini"
+                  slot="reference"
+                ></el-button>
+              </el-popconfirm>
             </template>
           </el-table-column>
         </el-table>
@@ -185,6 +193,14 @@ export default {
     },
   },
   methods: {
+    // 删除整行属性 值
+    delSpuSaleAttr(index) {
+      this.spuSaleAttrList.splice(index, 1);
+    },
+    // 删除tag,单个销售的属性值
+    delTag(index, row) {
+      row.spuSaleAttrValueList.splice(index, 1);
+    },
     // 失去焦点触发
     // 当失去焦点时，应把属性值列表中的数据加入到当前行的属性值列表，传的参数是从vue插件中看到的需要什么值，就传什么值
     // 添加完成之后，就隐藏input框
