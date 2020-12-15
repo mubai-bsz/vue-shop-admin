@@ -1,7 +1,12 @@
 <template>
   <div>
     <el-card style="margin-top: 20px" v-loading="loading">
-      <el-button type="primary" icon="el-icon-plus">添加SPU</el-button>
+      <el-button
+        type="primary"
+        icon="el-icon-plus"
+        :disabled="!category.category3Id"
+        >添加SPU</el-button
+      >
 
       <el-table :data="spuList" border style="width: 100%; margin: 20px 0">
         <el-table-column type="index" label="序号" width="80" align="center">
@@ -10,7 +15,7 @@
 
         <el-table-column prop="description" label="SPU描述"> </el-table-column>
         <el-table-column label="操作">
-          <template>
+          <template slot-scope="{ row }">
             <el-button
               type="primary"
               icon="el-icon-plus"
@@ -20,6 +25,7 @@
               type="primary"
               icon="el-icon-edit"
               size="mini"
+              @click="$emit('showUpdateList', row)"
             ></el-button>
             <el-button type="info" icon="el-icon-info" size="mini"></el-button>
             <el-button
@@ -97,6 +103,7 @@ export default {
       this.spuList = [];
       this.page = 1;
       this.limit = 3;
+      this.total = 0;
       this.category3Id = "";
     },
   },
@@ -104,8 +111,17 @@ export default {
     this.$bus.$on("change", this.handleCategoryChange);
     this.$bus.$on("clearList", this.clearList);
   },
+  beforeDestroy() {
+    // 通常情况下：清除绑定的全局事件
+    this.$bus.$off("change", this.handleCategoryChange);
+    this.$bus.$off("clearList", this.clearList);
+  },
 };
 </script>
 
-<style>
+<style lang="sass">
+.trademark-pagination
+  text-align: right
+.el-pagination__sizes
+  margin-left: 450px
 </style>
