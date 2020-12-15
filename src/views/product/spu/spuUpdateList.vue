@@ -24,15 +24,18 @@
       </el-form-item>
       <el-form-item label="SPU图片">
         <el-upload
+          accept="image/*"
           class="avatar-uploader"
           list-type="picture-card"
+          :file-list="formatImageList"
+          :action="`${$BASE_API}/admin/product/fileUpload`"
           :on-preview="handlePictureCardPreview"
           :on-remove="handleRemove"
-          :file-list="imageList"
-          :action="`${$BASE_API}/admin/product/fileUpload`"
+          :on-success="handleAvatarSuccess"
+          :before-upload="beforeAvatarUpload"
         >
-          <img v-if="false" :src="trademarkForm.logoUrl" class="avatar" />
-          <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+          <!-- <img v-if="false" :src="trademarkForm.logoUrl" class="avatar" /> -->
+          <i class="el-icon-plus avatar-uploader-icon"></i>
         </el-upload>
         <span>只能上传jpg/png文件，且不超过50kb</span>
       </el-form-item>
@@ -125,7 +128,19 @@ export default {
       spuSaleAttrList: [], // 获取spu销售属性列表
     };
   },
-  methods: {
+  computed: {
+    // 处理图片的数据格式
+    formatImageList() {
+      // 值改变，长度不变，使用map
+      return this.imageList.map((img) => {
+        return {
+          uid: img.uid || img.id,
+          name: img.name,
+          url: img.url,
+        };
+      });
+    },
+
     // 过滤掉选中的图片,注意，这里写完之后，在上面的遍历展示那里，不要忘记修改遍历的原型
     filterSaleAttrList() {
       return this.saleAttrList.filter((sale) => {
@@ -137,12 +152,47 @@ export default {
         );
       });
     },
+  },
+  methods: {
+    // 上传之前先检测传入的图片
+    beforeAvatarUpload(file) {
+      // 定义图片格式
+      const imgTypes = ["image/jpg", "image/png", "image/jpeg"];
+      // 检测图片类型
+      const isValidType = imgTypes.indexOf(file.type) > -1;
+      // 检测文件大小
+      const isLt = file.size / 1024 < 50;
+
+      if (!isValidType) {
+        this.$message.error("上传图片只能是 JPG、PNG 格式!");
+      }
+      if (!isLt) {
+        this.$message.error("上传头像图片大小不能超过 50kb!");
+      }
+      // 返回值为true，表示可以上传
+      // 返回值为false，表示不可以上传
+      return isValidType && isLt;
+    },
+    // 上传图片成功
+    // 上传之后，应该把图片添加到imageList中， 上传需要文件名、URL、id在接口中看,但是返回的数据并不是这样的，要通过计算属性对数据结构进行处理,
+    // 上传时，图片会出现闪烁现象，添加一个uid即可，这是elementui 组件的bug导致产生
+    handleAvatarSuccess(res, file) {
+      this.imageList.push({
+        uid: file.uid,
+        imgName: file.name, // 文件名称
+        imgUrl: res.data, // 图片地址
+        spuId: this.spu.id, // SPU id
+      });
+      // console.log(res.data); // 图片地址
+      // console.log(res, file);
+    },
     // 移除图片,通过过滤id来移除图片
     handleRemove(file, fileList) {
-      this.imageList = this.imageList.filter((img) => img.id !== file.id);
+      this.imageList = this.imageList.filter((img) => img.url !== file.url);
     },
     // 处理图片预览
     handlePictureCardPreview(file) {
+      console.log(file);
       this.previewImageUrl = file.url;
       this.visible = true;
     },
