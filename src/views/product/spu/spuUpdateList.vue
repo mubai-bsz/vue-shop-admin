@@ -1,6 +1,18 @@
 <template>
   <el-card style="margin-top: 20px">
-    <el-form label-width="80px" :model="spu">
+    <!--
+      表单校验
+        1、整体都在form表单中
+        2、通过prop属性来定义表单项名称
+        3、定义表单校验规则
+          - 在data中定义rules
+          - 绑定给form
+        4、校验表单
+          - 给form绑定ref
+          - this.$refs.spuForm.validate 校验表单
+
+     -->
+    <el-form label-width="80px" :model="spu" :rules="rules" ref="spuForm">
       <el-form-item label="SPU名称" prop="spuName">
         <el-input placeholder="请输入SPU名称" v-model="spu.spuName"></el-input>
       </el-form-item>
@@ -22,7 +34,7 @@
           v-model="spu.description"
         ></el-input>
       </el-form-item>
-      <el-form-item label="SPU图片">
+      <el-form-item label="SPU图片" prop="imageList">
         <el-upload
           accept="image/*"
           class="avatar-uploader"
@@ -130,8 +142,8 @@
         </el-table>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary">保存</el-button>
-        <el-button>取消</el-button>
+        <el-button type="primary" @click="save">保存</el-button>
+        <el-button @click="$emit('showList', spu.category3Id)">取消</el-button>
       </el-form-item>
     </el-form>
     <!-- 图片预览的对话框 -->
@@ -165,6 +177,14 @@ export default {
       saleAttrList: [], // 所有销售属性获取成功
       spuSaleAttrList: [], // 获取spu销售属性列表
       saleAttrValueText: "", // 属性值列表中的值
+      rules: {
+        spuName: [{ required: true, message: "请输入SPU名称" }],
+        tmId: [{ required: true, message: "请选择品牌" }],
+        description: [{ required: true, message: "请输入SPU描述" }],
+        // imageList 与 saleAttrId 非输入框，并不能直接使用validator的默认校验规则来进行校验，需要使用自定义规则
+        imageList: [{ validator: this.imageListValidator, required: true }],
+        saleAttrId: [{ validator: this.saleAttrIdValidator, required: true }],
+      },
     };
   },
   computed: {
@@ -193,6 +213,94 @@ export default {
     },
   },
   methods: {
+    // 自定义校验上传图片表单规则
+    imageListValidator(rule, value, callback) {
+      if (this.imageList.length > 0) {
+        // 校验通过
+        callback();
+        return;
+      }
+      // 校验失败时，调用的回调函数
+      callback(new Error("请至少上传一张图片"));
+    },
+    // 自定义校验销售属性规则
+    saleAttrIdValidator(rule, value, callback) {
+      if (this.spuSaleAttrList.length === 0) {
+        callback(new Error("请至少选择一个销售属性"));
+        return;
+      }
+
+      // 判断销售属性中至少添加一个销售属性值
+      // 使用some来查看，只要有一个是符合要求的，那么就会返回,返回值是一个布尔值
+      const isNotOk = this.spuSaleAttrList.some(
+        (sale) => sale.spuSaleAttrValueList.length === 0
+      );
+      if (isNotOk) {
+        callback(new Error("销售属性至少添加一个销售属性值, 请添加~"));
+        return;
+      }
+      callback();
+    },
+    // 保存是，触发校验规则
+    save() {
+      this.$refs.spuForm.validate(async (valid) => {
+        if (valid) {
+          /*
+            {
+              更新所需要的数据
+              "category3Id": 0,  // 三级分类id
+              "description": "string", // SPU描述
+              "id": 0, // SPU id
+              "spuImageList": [ // 图片列表
+                {
+                  "id": 0,
+                  "imgName": "string",
+                  "imgUrl": "string",
+                  "spuId": 0
+                }
+              ],
+              "spuName": "string", // SPU名称
+              "spuSaleAttrList": [ // SPU销售属性列表
+                {
+                  "baseSaleAttrId": 0,
+                  "id": 0,
+                  "saleAttrName": "string",
+                  "spuId": 0,
+                  "spuSaleAttrValueList": [
+                    {
+                      "baseSaleAttrId": 0,
+                      "id": 0,
+                      "isChecked": "string",
+                      "saleAttrName": "string",
+                      "saleAttrValueName": "string",
+                      "spuId": 0
+                    }
+                  ]
+                }
+              ],
+              "tmId": 0 // 品牌id
+            }
+          */
+          // 如果校验通过，那么就收集数据，调用接口，发送请求
+          // 先收集数据
+          const spu = {
+            ...this.spu,
+            spuImageList: this.imageList,
+            spuSaleAttrList: this.spuSaleAttrList,
+          };
+          // 调用接口，发送请求
+          const resule = await this.$API.spu.updateSpu(spu);
+          if (resule.code === 200) {
+            // 切换回showList,触发事件
+            this.$emit("showList", this.spu.category3Id);
+            this.$message.success("更新SPU成功~");
+          } else {
+            this.$message.error(result.message);
+          }
+        }
+      });
+    },
+
     // 删除整行属性 值
     delSpuSaleAttr(index) {
       this.spuSaleAttrList.splice(index, 1);

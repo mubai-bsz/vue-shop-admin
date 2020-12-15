@@ -2,7 +2,7 @@
   <div>
     <Category />
     <SpuShowList v-if="isShowList" @showUpdateList="showUpdateList" />
-    <SpuUpdateList v-else :item="item" />
+    <SpuUpdateList v-else :item="item" @showList="showList" />
   </div>
 </template>
 
@@ -25,6 +25,13 @@ export default {
       // 直接赋值的话，会修改原数据的值，创建一份新的数据
       // this.item = row;
       this.item = { ...row };
+    },
+    showList(category3Id) {
+      this.isShowList = true;
+      // 等ShowList组件加载完成，在触发事件
+      this.$nextTick(() => {
+        this.$bus.$emit("change", { category3Id });
+      });
     },
   },
   components: {
