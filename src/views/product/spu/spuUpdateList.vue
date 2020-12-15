@@ -53,7 +53,13 @@
             :key="tm.id"
           ></el-option>
         </el-select>
-        <el-button type="primary" icon="el-icon-plus">添加销售属性</el-button>
+        <el-button
+          type="primary"
+          icon="el-icon-plus"
+          :disabled="!spu.saleAttrId"
+          @click="addSpuSaleAttr"
+          >添加销售属性</el-button
+        >
         <el-table
           :data="spuSaleAttrList"
           border
@@ -67,20 +73,44 @@
           <el-table-column label="属性值列表">
             <template v-slot="{ row }">
               <el-tag
+                closable
                 style="margin-right: 5px"
                 v-for="attrVal in row.spuSaleAttrValueList"
                 :key="attrVal.id"
                 >{{ attrVal.saleAttrValueName }}</el-tag
               >
+              <!-- 自动聚焦失效，浏览器报错：自动对焦处理被阻塞，因为文档的URL有一个片段“#/product/spu/list”。
+                处理方法：手动聚焦，给元素添加一ref属性，通过ref获取到这个元素，自己手动调用 focus 这个方法，因为被阻塞，可以使用 nextTick 方法异步聚焦。
+
+                失去焦点的方法：enter键  或者是鼠标点击其他地方
+                在失去焦点时，输入的内容显示，并且添加按钮重新出现
+              -->
+              <el-input
+                v-if="row.edit"
+                size="mini"
+                style="width: 100px"
+                autofocus
+                v-model="saleAttrValueText"
+                ref="input"
+                @blur="editCompleted(row)"
+                @keyup.enter.native="editCompleted(row)"
+              ></el-input>
+
+              <el-button
+                v-else
+                icon="el-icon-plus"
+                size="mini"
+                @click="edit(row)"
+                >添加</el-button
+              >
             </template>
           </el-table-column>
           <el-table-column label="操作" width="150">
-            <template v-slot="{ row }">
+            <template>
               <el-button
                 type="warning"
                 icon="el-icon-edit"
                 size="mini"
-                @click="update(row)"
               ></el-button>
               <el-button
                 type="danger"
@@ -126,6 +156,7 @@ export default {
       visible: false, // 图片对话框显示或隐藏
       saleAttrList: [], // 所有销售属性获取成功
       spuSaleAttrList: [], // 获取spu销售属性列表
+      saleAttrValueText: "", // 属性值列表中的值
     };
   },
   computed: {
@@ -154,6 +185,67 @@ export default {
     },
   },
   methods: {
+    // 失去焦点触发
+    // 当失去焦点时，应把属性值列表中的数据加入到当前行的属性值列表，传的参数是从vue插件中看到的需要什么值，就传什么值
+    // 添加完成之后，就隐藏input框
+    editCompleted(row) {
+      if (this.saleAttrValueText) {
+        row.spuSaleAttrValueList.push({
+          baseSaleAttrId: row.baseSaleAttrId,
+          saleAttrName: row.saleAttrName,
+          saleAttrValueName: this.saleAttrValueText,
+          spuId: row.spuId,
+        });
+        // 添加完之后数据请空
+        this.saleAttrValueText = "";
+      }
+      row.edit = false;
+    },
+    // 点击添加按钮添加
+    // 向输入框中输入的内容应该把它变成响应式的，使用$set，来使edit变成响应式的，在input中输入内容时，可以获取到，在data中定义一个容器，盛放输入的值，saleAttrValueText就是这个容器
+    edit(row) {
+      this.$set(row, "edit", true);
+      this.$nextTick(() => {
+        this.$refs.input.focus();
+      });
+    },
+    // 添加销售属性
+    addSpuSaleAttr() {
+      // 选中销售属性的id
+      const { saleAttrId, id } = this.spu;
+      // 去所有销售属性列表找到某个销售属性
+      const sale = this.saleAttrList.find((sale) => sale.id === saleAttrId);
+
+      /*
+          需要的数据格式，需求文档中查找
+          {
+            "baseSaleAttrId": 0,
+            "id": 0,
+            "saleAttrName": "string",
+            "spuId": 0,
+            "spuSaleAttrValueList": [
+              {
+                "baseSaleAttrId": 0,
+                "id": 0,
+                "isChecked": "string",
+                "saleAttrName": "string",
+                "saleAttrValueName": "string",
+                "spuId": 0
+              }
+            ]
+          }
+    */
+      // 将销售属性添加到spu销售属性列表中
+      this.spuSaleAttrList.push({
+        baseSaleAttrId: sale.id, // 所有销售属性id
+        saleAttrName: sale.name, // 所有销售属性名称
+        spuSaleAttrValueList: [], //spu销售属性列表
+        spuId: id,
+      });
+      // 添加完成之后，清除选中的商品id
+      this.spu.saleAttrId = "";
+    },
+
     // 上传之前先检测传入的图片
     beforeAvatarUpload(file) {
       // 定义图片格式
