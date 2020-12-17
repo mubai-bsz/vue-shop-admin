@@ -17,7 +17,7 @@
         <el-input placeholder="请输入SPU名称" v-model="spu.spuName"></el-input>
       </el-form-item>
       <el-form-item label="品牌" prop="tmId">
-        <el-select placeholder="请选择品牌" v-model="spu.id">
+        <el-select placeholder="请选择品牌" v-model="spu.tmId">
           <el-option
             v-for="tm in trademarkList"
             :label="tm.tmName"
@@ -192,6 +192,7 @@ export default {
     formatImageList() {
       // 值改变，长度不变，使用map
       return this.imageList.map((img) => {
+        // console.log(img);
         return {
           uid: img.uid || img.id,
           name: img.name,
@@ -289,11 +290,17 @@ export default {
             spuSaleAttrList: this.spuSaleAttrList,
           };
           // 调用接口，发送请求
-          const resule = await this.$API.spu.updateSpu(spu);
-          if (resule.code === 200) {
+          let result;
+          if (this.spu.id) {
+            result = await this.$API.spu.updateSpu(spu);
+          } else {
+            result = await this.$API.spu.saveSpu(spu);
+          }
+
+          if (result.code === 200) {
             // 切换回showList,触发事件
             this.$emit("showList", this.spu.category3Id);
-            this.$message.success("更新SPU成功~");
+            this.$message.success(`${this.spu.id ? "更新" : "添加"}SPU成功~`);
           } else {
             this.$message.error(result.message);
           }
@@ -398,6 +405,7 @@ export default {
         imgName: file.name, // 文件名称
         imgUrl: res.data, // 图片地址
         spuId: this.spu.id, // SPU id
+        // this.imageUrl=URL.createObjectURL(file.raw);
       });
       // console.log(res.data); // 图片地址
       // console.log(res, file);
@@ -471,9 +479,12 @@ export default {
   },
   mounted() {
     this.getTrademarkList();
-    this.getSpuImageList();
-    this.getSpuSaleAttrList();
     this.getSaleAttrList();
+    // 有id说明是更新，没有id说明是添加
+    if (this.spu.id) {
+      this.getSpuImageList();
+      this.getSpuSaleAttrList();
+    }
   },
 };
 </script>
