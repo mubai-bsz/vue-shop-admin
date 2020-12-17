@@ -1,10 +1,11 @@
 <template>
   <div>
-    <Category
+    <!-- <Category
       @change="getAttrList"
       :disabled="!isShowList"
       @clearList="clearList"
-    />
+    /> -->
+    <Category :disabled="!isShowList" />
 
     <el-card v-show="isShowList" style="margin-top: 20px">
       <el-button
@@ -121,6 +122,7 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
 import Category from "@/components/Category";
 
 export default {
@@ -133,12 +135,29 @@ export default {
         attrName: "",
         attrValueList: [],
       },
-      category: {
-        category1Id: "",
-        category2Id: "",
-        category3Id: "",
-      },
+      // category: {
+      //   category1Id: "",
+      //   category2Id: "",
+      //   category3Id: "",
+      // },
     };
+  },
+  computed: {
+    ...mapState({
+      category: (state) => state.category.category,
+    }),
+  },
+  watch: {
+    "category.category3Id"(category3Id) {
+      if (!category3Id) return;
+      this.getAttrList();
+    },
+    "category.category1Id"() {
+      this.clearList();
+    },
+    "category.category2Id"() {
+      this.clearList();
+    },
   },
   methods: {
     // 重新选择分类列表，清除列表内容
@@ -148,13 +167,12 @@ export default {
       // 禁用按钮
       this.category.category3Id = "";
     },
-    clearList() {},
+
     // 添加属性
     addAttr() {
       this.isShowList = false;
       this.attr.attrName = "";
       this.attr.attrValueList = [];
-      this.attr.id = "";
     },
     editCompleted(row, index) {
       if (!row.valueName) {
@@ -172,13 +190,13 @@ export default {
         data.categoryId = this.category.category3Id;
         data.categoryLevel = 3;
       }
-      console.log(data);
+      // console.log(data);
       // 修改
       const result = await this.$API.attrs.saveAttrInfo(data);
       if (result.code === 200) {
         this.$message.success("更新属性成功~");
         this.isShowList = true;
-        this.getAttrList(this.category);
+        this.getAttrList();
       } else {
         this.$message.error(result.message);
       }
@@ -210,9 +228,9 @@ export default {
 
       this.isShowList = false;
     },
-    async getAttrList(category) {
-      this.category = category;
-      const result = await this.$API.attrs.getAttrList(category);
+    async getAttrList() {
+      // this.category = category;
+      const result = await this.$API.attrs.getAttrList(this.category);
       if (result.code === 200) {
         // console.log(result.data);
         // 子组件给父组件传递参数 自定义事件

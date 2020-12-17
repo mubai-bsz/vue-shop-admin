@@ -154,6 +154,8 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
+import { category } from "@/api";
 export default {
   /*
        第一步，先接收从list中传过来的数据，然后遍历展示出来
@@ -188,18 +190,26 @@ export default {
     };
   },
   computed: {
-    // 处理图片的数据格式
+    ...mapState({
+      category: (state) => state.category.category,
+    }),
+    // 处理图片的数据格式,返回来的图片数据与要使用的数据格式不一样，这时，可以通过计算属性的方法来改变图片名称的数据格式，但是又不会修改原数据
     formatImageList() {
       // 值改变，长度不变，使用map
-      return this.imageList.map((img) => {
+      // 一上来请求回来的数据只有id
+      // 新添加的数据不能设置id（由后台设置），所以写的是uid
+      // 总之，id一定由后台服务器生成
+      const a = this.imageList.map((img) => {
         // console.log(img);
         return {
           uid: img.uid || img.id,
-          name: img.name,
-          url: img.url,
+          name: img.imgName,
+          url: img.imgUrl,
         };
       });
+      return a;
     },
+    // 保存的时候要改变数据的格式，把name改为imgName，URL改为imgUrl
 
     // 过滤掉选中的图片,注意，这里写完之后，在上面的遍历展示那里，不要忘记修改遍历的原型
     filterSaleAttrList() {
@@ -242,7 +252,7 @@ export default {
       }
       callback();
     },
-    // 保存是，触发校验规则
+    // 保存，触发校验规则
     save() {
       this.$refs.spuForm.validate(async (valid) => {
         if (valid) {
@@ -284,8 +294,18 @@ export default {
           */
           // 如果校验通过，那么就收集数据，调用接口，发送请求
           // 先收集数据
+          // 保存的时候转换数据
+          // const changeType = this.formatImageList.map((img) => {
+          //   return {
+          //     imgName: img.name,
+          //     imgUrl: img.url,
+          //   };
+          // });
+
           const spu = {
             ...this.spu,
+            // spuImageList: changeType,
+            category3Id: this.category.category3Id,
             spuImageList: this.imageList,
             spuSaleAttrList: this.spuSaleAttrList,
           };
@@ -299,7 +319,7 @@ export default {
 
           if (result.code === 200) {
             // 切换回showList,触发事件
-            this.$emit("showList", this.spu.category3Id);
+            this.$emit("showList");
             this.$message.success(`${this.spu.id ? "更新" : "添加"}SPU成功~`);
           } else {
             this.$message.error(result.message);
@@ -341,13 +361,13 @@ export default {
       });
     },
     // 添加销售属性
-    addSpuSaleAttr() {
-      // 选中销售属性的id
-      const { saleAttrId, id } = this.spu;
-      // 去所有销售属性列表找到某个销售属性
-      const sale = this.saleAttrList.find((sale) => sale.id === saleAttrId);
+    // addSpuSaleAttr() {
+    //   // 选中销售属性的id
+    //   const { saleAttrId, id } = this.spu;
+    //   // 去所有销售属性列表找到某个销售属性
+    //   const sale = this.saleAttrList.find((sale) => sale.id === saleAttrId);
 
-      /*
+    /*
           需要的数据格式，需求文档中查找
           {
             "baseSaleAttrId": 0,
@@ -366,15 +386,30 @@ export default {
             ]
           }
     */
-      // 将销售属性添加到spu销售属性列表中
+    // 将销售属性添加到spu销售属性列表中
+    //   this.spuSaleAttrList.push({
+    //     baseSaleAttrId: sale.id, // 所有销售属性id
+    //     saleAttrName: sale.name, // 所有销售属性名称
+    //     spuSaleAttrValueList: [], //spu销售属性列表
+    //     spuId: id,
+    //   });
+    //   // 添加完成之后，清除选中的商品id
+    //   this.spu.saleAttrId = "";
+    // },
+    addSpuSaleAttr() {
+      // 选中的销售属性
+      const { sale, id } = this.spu;
+
+      const [baseSaleAttrId, saleAttrName] = sale.split("-");
+      // 将销售属性添加到商品中
       this.spuSaleAttrList.push({
-        baseSaleAttrId: sale.id, // 所有销售属性id
-        saleAttrName: sale.name, // 所有销售属性名称
-        spuSaleAttrValueList: [], //spu销售属性列表
-        spuId: id,
+        baseSaleAttrId: +baseSaleAttrId, // 所有销售属性id
+        saleAttrName, // 所有销售属性名称
+        spuId: id, // SPU id
+        spuSaleAttrValueList: [], // 销售属性值列表
       });
-      // 添加完成之后，清除选中的商品id
-      this.spu.saleAttrId = "";
+      // 清空选中的销售属性id
+      this.spu.sale = "";
     },
 
     // 上传之前先检测传入的图片
@@ -396,27 +431,29 @@ export default {
       // 返回值为false，表示不可以上传
       return isValidType && isLt;
     },
+
     // 上传图片成功
     // 上传之后，应该把图片添加到imageList中， 上传需要文件名、URL、id在接口中看,但是返回的数据并不是这样的，要通过计算属性对数据结构进行处理,
     // 上传时，图片会出现闪烁现象，添加一个uid即可，这是elementui 组件的bug导致产生
     handleAvatarSuccess(res, file) {
       this.imageList.push({
         uid: file.uid,
+        // 上传的图片名称应该是imgName与imgURL
         imgName: file.name, // 文件名称
         imgUrl: res.data, // 图片地址
         spuId: this.spu.id, // SPU id
-        // this.imageUrl=URL.createObjectURL(file.raw);
       });
       // console.log(res.data); // 图片地址
       // console.log(res, file);
     },
+
     // 移除图片,通过过滤id来移除图片
     handleRemove(file, fileList) {
-      this.imageList = this.imageList.filter((img) => img.url !== file.url);
+      this.imageList = this.imageList.filter((img) => img.imgUrl !== file.url);
     },
     // 处理图片预览
     handlePictureCardPreview(file) {
-      console.log(file);
+      // console.log(file);
       this.previewImageUrl = file.url;
       this.visible = true;
     },
@@ -442,13 +479,7 @@ export default {
         // 更新数据并处理数据，为了把上传的图片给显示出来.只是处理一下数据结构，减少长度，并不改变原数据的值，使用map
         // 原本数据结构 [{imgName: '', imgUrl: ''}]
         // 需要的数据结构： [{imgName: '', imgUrl: ''}]
-        this.imageList = result.data.map((img) => {
-          return {
-            id: img.id, // 这个id不是在这里用的，是在删除图片的时候使用的
-            name: img.imgName,
-            url: img.imgUrl,
-          };
-        });
+        this.imageList = result.data
       } else {
         this.$message.error(result.message);
       }

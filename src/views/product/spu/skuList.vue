@@ -99,6 +99,7 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
 export default {
   name: "SkuList",
   // 从list中传过来的数据
@@ -115,15 +116,16 @@ export default {
       rules: {}, // 表单验证规则
     };
   },
+  computed: {
+    ...mapState({
+      category: (state) => state.category.category,
+    }),
+  },
   methods: {
     handleSelectionChange() {},
     // 获取平台属性
     async getAttrList() {
-      const result = await this.$API.attrs.getAttrList({
-        category1Id: this.spu.category1Id,
-        category2Id: this.spu.category2Id,
-        category3Id: this.spu.category3Id,
-      });
+      const result = await this.$API.attrs.getAttrList(this.category);
       if (result.code === 200) {
         this.$message.success("获取所有平台属性列表成功~");
         // 处理数据

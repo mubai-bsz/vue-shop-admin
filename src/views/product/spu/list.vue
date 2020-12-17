@@ -46,12 +46,12 @@ export default {
       // this.item = row;
       this.item = { ...row };
     },
-    showList(category3Id) {
+    showList(category) {
       this.isShowList = true;
       // 等ShowList组件加载完成，在触发事件
-      this.$nextTick(() => {
-        this.$bus.$emit("change", { category3Id });
-      });
+      // this.$nextTick(() => {
+      //   this.$bus.$emit("change", { category3Id });
+      // });
     },
   },
   components: {

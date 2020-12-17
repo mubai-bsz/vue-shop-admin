@@ -48,8 +48,10 @@
 </template>
 
 <script>
+import { mapState, mapActions, mapMutations } from "vuex";
 export default {
   name: "Category",
+  props: ["disabled"],
   data() {
     return {
       category: {
@@ -57,64 +59,54 @@ export default {
         category2Id: "",
         category3Id: "",
       },
-      category1List: [], // 1级分类数据
-      category2List: [],
-      category3List: [],
+      // category1List: [], // 1级分类数据
+      // category2List: [],
+      // category3List: [],
     };
   },
+  computed: {
+    ...mapState({
+      category1List: (state) => state.category.category1List,
+      category2List: (state) => state.category.category2List,
+      category3List: (state) => state.category.category3List,
+    }),
+  },
   methods: {
+    ...mapMutations(["category/SET_CATEGORY3_ID"]),
+    // 按照命名空间的写法引进来的数据
+    ...mapActions([
+      "category/getCategory1List",
+      "category/getCategory2List",
+      "category/getCategory3List",
+    ]),
     // 处理输入框的change事件
     async handleSelectChange1(category1Id) {
       // 切换时把后面的数据清空
       this.category.category2Id = "";
       this.category.category3Id = "";
-
-      this.category2List = [];
-      this.category3List = [];
-
-      const result = await this.$API.attrs.getCategorys2(category1Id);
-      if (result.code === 200) {
-        this.category2List = result.data;
-      } else {
-        this.$message.error(result.message);
-      }
+      // 调用getCategory2List ，传入1id
+      this["category/getCategory2List"](category1Id);
+      // this.category2List = [];
+      // this.category3List = [];
       // 清空列表数据
-      this.$bus.$emit("clearList");
-
+      // this.$bus.$emit("clearList");
     },
     // 二级列表
     async handleSelectChange2(category2Id) {
       // 切换时把后面的数据清空
       this.category.category3Id = "";
-      this.category3List = [];
+      // this.category3List = [];
+      this["category/getCategory3List"](category2Id);
 
-      const result = await this.$API.attrs.getCategorys3(category2Id);
-      if (result.code === 200) {
-        this.category3List = result.data;
-      } else {
-        this.$message.error(result.message);
-      }
-      this.$bus.$emit("clearList");
-    
+      // this.$bus.$emit("clearList");
     },
     // 三级列表
     async handleSelectChange3(category3Id) {
-      const category = {
-        ...this.category,
-        category3Id,
-      };
-
-      this.$bus.$emit("change", category);
-      this.$bus.$emit("clearList");
+      this["category/SET_CATEGORY3_ID"](category3Id);
     },
   },
   async mounted() {
-    const result = await this.$API.attrs.getCategorys1();
-    if (result.code === 200) {
-      this.category1List = result.data;
-    } else {
-      this.$message.error(result.message);
-    }
+    this["category/getCategory1List"]();
   },
 };
 </script>

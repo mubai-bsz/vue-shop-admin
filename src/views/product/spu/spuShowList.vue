@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-card style="margin-top: 20px" v-loading="loading">
+    <el-card style="margin-top: 20px">
       <el-button
         type="primary"
         icon="el-icon-plus"
@@ -9,7 +9,12 @@
         >添加SPU</el-button
       >
 
-      <el-table :data="spuList" border style="width: 100%; margin: 20px 0">
+      <el-table
+        :data="spuList"
+        v-loading="loading"
+        border
+        style="width: 100%; margin: 20px 0"
+      >
         <el-table-column type="index" label="序号" width="80" align="center">
         </el-table-column>
         <el-table-column prop="spuName" label="SPU名称"> </el-table-column>
@@ -27,7 +32,7 @@
               type="primary"
               icon="el-icon-edit"
               size="mini"
-              @click="$emit('showUpdateList', row)"
+              @click="$emit('showUpdateList', { ...row, ...category })"
             ></el-button>
             <el-button type="info" icon="el-icon-info" size="mini"></el-button>
             <el-button
@@ -55,16 +60,18 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
+
 export default {
   name: "SpuShowList",
   data() {
     category: {
       return {
-        category: {
-          category1Id: "",
-          category2Id: "",
-          category3Id: "",
-        },
+        // category: {
+        //   category1Id: "",
+        //   category2Id: "",
+        //   category3Id: "",
+        // },
         page: 1,
         limit: 3,
         total: 0,
@@ -73,17 +80,37 @@ export default {
       };
     }
   },
+  computed: {
+    ...mapState({
+      category: (state) => state.category.category,
+    }),
+  },
+  watch: {
+    "category.category3Id": {
+      handler(category3Id) {
+        if (!category3Id) return;
+        this.getPageList(this.page, this.limit);
+      },
+      immediate: true,
+    },
+    "category.category1Id"() {
+      this.clearList();
+    },
+    "category.category2Id"() {
+      this.clearList();
+    },
+  },
   methods: {
     // 获取spu分类列表
     async getPageList(page, limit) {
       const { category3Id } = this.category;
-
+      this.loading = true;
       const result = await this.$API.spu.getSpuList({
         page,
         limit,
         category3Id,
       });
-      this.loading = true;
+
       if (result.code === 200) {
         this.$message.success("获取SPU分页列表成功~");
         this.spuList = result.data.records;
@@ -95,10 +122,10 @@ export default {
     },
 
     // 点击三级分类时发送请求，请求数据,需要page、limit、3id
-    handleCategoryChange(category) {
-      this.category = category;
-      this.getPageList(this.page, this.limit);
-    },
+    // handleCategoryChange(category) {
+    //   this.category = category;
+    //   this.getPageList(this.page, this.limit);
+    // },
 
     // 当切换三级页面时，下面数据清空
     clearList() {
@@ -109,15 +136,15 @@ export default {
       this.category3Id = "";
     },
   },
-  mounted() {
-    this.$bus.$on("change", this.handleCategoryChange);
-    this.$bus.$on("clearList", this.clearList);
-  },
-  beforeDestroy() {
-    // 通常情况下：清除绑定的全局事件
-    this.$bus.$off("change", this.handleCategoryChange);
-    this.$bus.$off("clearList", this.clearList);
-  },
+  // mounted() {
+  //   this.$bus.$on("change", this.handleCategoryChange);
+  //   this.$bus.$on("clearList", this.clearList);
+  // },
+  // beforeDestroy() {
+  //   // 通常情况下：清除绑定的全局事件
+  //   this.$bus.$off("change", this.handleCategoryChange);
+  //   this.$bus.$off("clearList", this.clearList);
+  // },
 };
 </script>
 
