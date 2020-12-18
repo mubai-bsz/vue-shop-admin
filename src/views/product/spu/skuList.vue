@@ -12,6 +12,7 @@
         <el-input-number
           placeholder="请输入SPU价格"
           style="width: 300px"
+          v-model="sku.price"
           controls-position="right"
           :min="0"
         ></el-input-number>
@@ -20,21 +21,27 @@
         <el-input-number
           placeholder="请输入SPU重量"
           style="width: 300px"
+          v-model="sku.weight"
           controls-position="right"
           :min="0"
         ></el-input-number>
       </el-form-item>
       <el-form-item label="规格描述">
-        <el-input type="textarea" placeholder="请选择SPU规格描述"> </el-input>
+        <el-input
+          type="textarea"
+          placeholder="请选择SPU规格描述"
+          v-model="sku.description"
+        >
+        </el-input>
       </el-form-item>
       <el-form-item label="平台属性">
         <div
           class="skulist-select-container"
-          v-for="attr in attrList"
+          v-for="(attr, index) in attrList"
           :key="attr.id"
         >
           <span>{{ attr.attrName }}</span>
-          <el-select placeholder="请选择">
+          <el-select placeholder="请选择" v-model="sku.skuAttrValueList[index]">
             <el-option
               v-for="value in attr.attrValueList"
               :key="value.id"
@@ -48,11 +55,14 @@
       <el-form-item label="销售属性">
         <div
           class="skulist-select-container"
-          v-for="sale in spuSaleAttrList"
+          v-for="(sale, index) in spuSaleAttrList"
           :key="sale.id"
         >
           <span>{{ sale.saleAttrName }}</span>
-          <el-select placeholder="请选择">
+          <el-select
+            placeholder="请选择"
+            v-model="sku.skuSaleAttrValueList[index]"
+          >
             <el-option
               v-for="value in sale.spuSaleAttrValueList"
               :key="value.id"
@@ -84,8 +94,15 @@
           </el-table-column>
           <el-table-column prop="imgName" label="名称"></el-table-column>
           <el-table-column label="操作" show-overflow-tooltip>
-            <template>
-              <el-button type="primary" size="mini">设为默认</el-button>
+            <template v-slot="{ row, $index }">
+              <el-button
+                v-if="!row.isDefault"
+                type="primary"
+                size="mini"
+                @click="setDefault($index)"
+                >设为默认</el-button
+              >
+              <el-tag v-else type="success">默认</el-tag>
             </template>
           </el-table-column>
         </el-table>
@@ -109,7 +126,11 @@ export default {
   data() {
     return {
       spu: this.spuItem, // spu数据
-      sku: {}, // sku数据
+      sku: {
+        skuAttrValueList: [],
+        skuSaleAttrValueList: [],
+        skuImageList: [],
+      }, // sku数据
       attrList: [], // 平台属性数据
       spuSaleAttrList: [], // 销售属性数据
       imageList: [], // 图片列表
@@ -122,7 +143,20 @@ export default {
     }),
   },
   methods: {
-    handleSelectionChange() {},
+    // 当选择项变化时，触发该函数，然后修改sku中的值
+    handleSelectionChange(skuImageList) {
+      this.sku.skuImageList = skuImageList;
+    },
+    // 设置默认按钮
+    // 要看选择的是哪一张图片，当前选中图片的下标与遍历元素相等的话，就表明是选中的图片,i是当前选中的图片
+    setDefault(i) {
+      this.imageList = this.imageList.map((img, index) => {
+        return {
+          ...img,
+          isDefault: index === i ? true : false,
+        };
+      });
+    },
     // 获取平台属性
     async getAttrList() {
       const result = await this.$API.attrs.getAttrList(this.category);

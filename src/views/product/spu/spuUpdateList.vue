@@ -361,11 +361,11 @@ export default {
       });
     },
     // 添加销售属性
-    // addSpuSaleAttr() {
-    //   // 选中销售属性的id
-    //   const { saleAttrId, id } = this.spu;
-    //   // 去所有销售属性列表找到某个销售属性
-    //   const sale = this.saleAttrList.find((sale) => sale.id === saleAttrId);
+    addSpuSaleAttr() {
+      // 选中销售属性的id
+      const { saleAttrId, id } = this.spu;
+      // 去所有销售属性列表找到某个销售属性
+      const sale = this.saleAttrList.find((sale) => sale.id === saleAttrId);
 
     /*
           需要的数据格式，需求文档中查找
@@ -387,30 +387,31 @@ export default {
           }
     */
     // 将销售属性添加到spu销售属性列表中
-    //   this.spuSaleAttrList.push({
-    //     baseSaleAttrId: sale.id, // 所有销售属性id
-    //     saleAttrName: sale.name, // 所有销售属性名称
-    //     spuSaleAttrValueList: [], //spu销售属性列表
-    //     spuId: id,
-    //   });
-    //   // 添加完成之后，清除选中的商品id
-    //   this.spu.saleAttrId = "";
-    // },
-    addSpuSaleAttr() {
-      // 选中的销售属性
-      const { sale, id } = this.spu;
-
-      const [baseSaleAttrId, saleAttrName] = sale.split("-");
-      // 将销售属性添加到商品中
       this.spuSaleAttrList.push({
-        baseSaleAttrId: +baseSaleAttrId, // 所有销售属性id
-        saleAttrName, // 所有销售属性名称
-        spuId: id, // SPU id
-        spuSaleAttrValueList: [], // 销售属性值列表
+        baseSaleAttrId: sale.id, // 所有销售属性id
+        saleAttrName: sale.name, // 所有销售属性名称
+        spuSaleAttrValueList: [], //spu销售属性列表
+        spuId: id,
       });
-      // 清空选中的销售属性id
-      this.spu.sale = "";
+      // 添加完成之后，清除选中的商品id
+      this.spu.saleAttrId = "";
+
     },
+    // addSpuSaleAttr() {
+    //   // 选中的销售属性
+    //   const { sale, id } = this.spu;
+
+    //   const [baseSaleAttrId, saleAttrName] = sale.split("-");
+    //   // 将销售属性添加到商品中
+    //   this.spuSaleAttrList.push({
+    //     baseSaleAttrId: +baseSaleAttrId, // 所有销售属性id
+    //     saleAttrName, // 所有销售属性名称
+    //     spuId: id, // SPU id
+    //     spuSaleAttrValueList: [], // 销售属性值列表
+    //   });
+    //   // 清空选中的销售属性id
+    //   this.spu.sale = "";
+    // },
 
     // 上传之前先检测传入的图片
     beforeAvatarUpload(file) {

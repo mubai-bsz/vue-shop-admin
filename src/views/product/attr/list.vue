@@ -240,6 +240,9 @@ export default {
       }
     },
   },
+  beforeDestroy() {
+    this.$store.commit("category/RESET_CATEGORY_ID");
+  },
   components: {
     Category,
   },
